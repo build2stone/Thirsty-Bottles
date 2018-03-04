@@ -41,45 +41,27 @@ public class ThirstyBottles {
 		if (event.getWorld().isRemote)
 			return;
 		
-		if (event.getItemStack() != null && event.getItemStack().getItem() instanceof ItemGlassBottle) {
+        if (event.getItemStack() != null && event.getItemStack().getItem() instanceof ItemGlassBottle) {
 
-			BlockPos pos = new BlockPos(event.getHitVec());
-			IBlockState state = event.getWorld().getBlockState(pos);
-			EntityPlayer player = event.getEntityPlayer();
+            World world = event.getWorld();
+            EntityPlayer player = event.getEntityPlayer();
 
-			if (state == null) 
-				return;
-			
-			if (state.getMaterial() == Material.WATER && (state.getBlock() instanceof IFluidBlock || state.getBlock() instanceof BlockLiquid) && Blocks.WATER.canCollideCheck(state, true)) {
-				
-				event.getWorld().playSound(player, player.posX, player.posY, player.posZ, SoundEvents.ITEM_BOTTLE_FILL, SoundCategory.NEUTRAL, 1.0F, 1.0F);
-				event.getEntityPlayer().setHeldItem(event.getHand(), transformBottle(event.getItemStack(), event.getEntityPlayer(), new ItemStack(Items.POTIONITEM)));
-				event.getWorld().setBlockToAir(pos);
-			}
-		}
-	}
+            Vec3d look = player.getLookVec();
+            float f = 5.0F;
+            Vec3d start = new Vec3d(player.posX, player.posY + player.getEyeHeight(), player.posZ);
+            Vec3d end = new Vec3d(player.posX + look.x * f, player.posY + player.getEyeHeight() + look.y * f, player.posZ + look.z * f);
+            RayTraceResult raytraceresult = world.rayTraceBlocks(start, end, true, false, true);
 
-	private ItemStack transformBottle(ItemStack input, EntityPlayer player, ItemStack stack) {
-		
-		input.shrink(1);
-		player.addStat(StatList.getObjectUseStats(input.getItem()));
+            if (raytraceresult != null) {
 
-		if (input.getCount() < 1) {
-			
-			return stack;
-		} 
-		
-		else {
-			
-			if (!player.inventory.addItemStackToInventory(stack)) {
-				
-				player.dropItem(stack, false);
-			}
+                BlockPos pos = raytraceresult.getBlockPos();
+                IBlockState state = event.getWorld().getBlockState(pos);
 
-			return input;
-		}
-	}
-	
+                if (state.getMaterial() == Material.WATER && (state.getBlock() instanceof IFluidBlock || state.getBlock() instanceof BlockLiquid) && Blocks.WATER.canCollideCheck(state, true)) {
+                    event.getWorld().setBlockToAir(pos);
+                }
+            }
+        }
     
     @EventHandler
     public void onFingerprintViolation (FMLFingerprintViolationEvent event) {
